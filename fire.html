@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>2026新年烟花贺卡</title>
+    <title>2026新年快乐</title>
     <style>
         * {
             margin: 0;
@@ -45,7 +45,7 @@
             position: absolute;
             top: 20px;
             right: 20px;
-            width: 240px; /* 增大到原来的4倍 */
+            width: 240px;
             height: 240px;
             cursor: pointer;
             z-index: 10;
@@ -66,29 +66,44 @@
         }
         
         #personalization-modal {
-            position: absolute;
+            position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.9);
-            padding: 30px;
-            border-radius: 15px;
-            width: 80%;
-            max-width: 400px;
+            background: rgba(0, 0, 0, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 320px;
             display: none;
-            z-index: 100;
+            z-index: 1000;
             border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 5px 30px rgba(0, 0, 0, 0.8);
+            -webkit-overflow-scrolling: touch;
+            overflow: auto;
+            max-height: 80vh;
+        }
+        
+        #personalization-modal h2 {
+            margin-bottom: 15px;
+            text-align: center;
+            color: #ffd700;
+            font-size: 20px;
+            padding: 0 10px;
         }
         
         #name-input {
             width: 100%;
-            padding: 12px;
-            margin-bottom: 20px;
+            padding: 10px;
+            margin-bottom: 15px;
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 5px;
+            border-radius: 8px;
             color: white;
             font-size: 16px;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
         }
         
         #submit-name {
@@ -96,10 +111,12 @@
             padding: 12px;
             background: linear-gradient(45deg, #ff6b6b, #ff8e53);
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             color: white;
             font-size: 16px;
             cursor: pointer;
+            font-weight: bold;
+            -webkit-tap-highlight-color: transparent;
         }
         
         .effect-btn {
@@ -139,6 +156,26 @@
             margin-left: 10px;
         }
         
+        #swipe-hint {
+            position: absolute;
+            bottom: 80px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.6);
+            padding: 0 20px;
+            z-index: 10;
+            display: none;
+            animation: fadeInOut 2s infinite;
+        }
+        
+        @keyframes fadeInOut {
+            0% { opacity: 0.3; }
+            50% { opacity: 0.8; }
+            100% { opacity: 0.3; }
+        }
+        
         @media (max-width: 768px) {
             #theme-indicator {
                 font-size: 12px;
@@ -146,7 +183,7 @@
             }
             
             #moon-container {
-                width: 180px; /* 移动端适当减小 */
+                width: 180px;
                 height: 180px;
             }
             
@@ -158,12 +195,28 @@
             #blessing-text {
                 font-size: 20px;
             }
+            
+            #swipe-hint {
+                display: block;
+                font-size: 14px;
+            }
         }
         
         @media (max-width: 480px) {
             #moon-container {
-                width: 120px; /* 小屏幕进一步减小 */
+                width: 120px;
                 height: 120px;
+            }
+            
+            #swipe-hint {
+                font-size: 12px;
+                bottom: 60px;
+            }
+        }
+        
+        @media (hover: hover) and (pointer: fine) {
+            #swipe-hint {
+                display: none;
             }
         }
     </style>
@@ -171,7 +224,6 @@
 <body>
     <canvas id="fireworks-canvas"></canvas>
     
-    <!-- UI元素 -->
     <div id="theme-indicator">主题: 经典</div>
     <div id="moon-container" title="点击月亮获取祝福"></div>
     <div id="blessing-text"></div>
@@ -180,17 +232,14 @@
         <button class="effect-btn" id="lucky-number">幸运数</button>
     </div>
     
-    <!-- 个性化设置模态框 -->
     <div id="personalization-modal">
         <h2>🎆 个性化设置</h2>
         <input type="text" id="name-input" placeholder="请输入您的名字" maxlength="10" autocomplete="off">
         <button id="submit-name">开启专属烟花</button>
     </div>
     
-    <!-- Toast提示 -->
     <div id="toast" class="toast"></div>
     
-    <!-- 隐藏的祝福语，用于文字烟花 -->
     <div class="hidden">
         <div class="shape">新年快乐</div>
         <div class="shape">合家幸福</div>
@@ -200,12 +249,18 @@
     </div>
 
     <script>
-        // ================== 设备适配 ==================
+        const currentYear = new Date().getFullYear();
+
+        // 判断当前年份是否为2026，并设置对应的标题
+        if (currentYear === 2026) {
+        document.title = "欢迎来到2026年！";
+        } else {
+        document.title = "2025即将结束！";
+        }
         const canvas = document.getElementById("fireworks-canvas");
         const ctx = canvas.getContext("2d");
         const DPR = window.devicePixelRatio || 1;
         
-        // 调整画布大小
         function resizeCanvas() {
             const w = window.innerWidth;
             const h = window.innerHeight;
@@ -220,14 +275,12 @@
         resizeCanvas();
         window.addEventListener("resize", resizeCanvas);
         
-        // ================== 公共变量 ==================
         const shapes = document.querySelectorAll(".shape");
         const bigbooms = [];
         const stars = [];
         const raf = requestAnimationFrame;
         const rand = (a, b) => Math.random() * (b - a) + a;
         
-        // 主题定义
         const themes = [
             { name: '经典', colors: ['#ff3366', '#ff6633', '#ffcc33', '#33ff66', '#33ccff'] },
             { name: '金色', colors: ['#ffd700', '#ffaa00', '#ff7700', '#ff5500', '#ff3300'] },
@@ -236,7 +289,6 @@
             { name: '鸿运', colors: ['#ff0000', '#ff3300', '#ff6600', '#ff9900', '#ffcc00'] }
         ];
         
-        // 祝福语库
         const blessings = [
             "新年快乐，万事如意！",
             "合家幸福，安康美满！", 
@@ -248,7 +300,6 @@
             "福星高照，好运连连！"
         ];
         
-        // 应用状态
         let themeIndex = 0;
         let themeTimer = null;
         let clickCount = 0;
@@ -261,57 +312,27 @@
         let keyInput = '';
         let lastFireworkTime = 0;
         let activeTextFireworks = 0;
-        const MAX_TEXT_FIREWORKS = 1; // 限制同时只能有一个文字烟花
-        const textCache = new Map(); // 文字粒子缓存
+        const MAX_TEXT_FIREWORKS = 1;
+        const textCache = new Map();
         
-        // ================== 月亮加载 ==================
+        // 触摸滑动相关变量
+        let touchStartY = 0;
+        let touchStartX = 0;
+        let touchEndY = 0;
+        let touchEndX = 0;
+        const SWIPE_THRESHOLD = 80; // 滑动阈值
+        const SWIPE_HINT_TIMEOUT = 10000; // 10秒后隐藏提示
+        
         const moonCanvas = document.createElement("canvas");
         const moonCtx = moonCanvas.getContext("2d");
-        moonCanvas.width = 480; // 增大尺寸以适应4倍放大
+        moonCanvas.width = 480;
         moonCanvas.height = 480;
         
-        // 加载外部月亮图片
         const moonImage = new Image();
         moonImage.onload = function() {
-            // 绘制月亮主体
             moonCtx.clearRect(0, 0, 480, 480);
-            moonCtx.drawImage(moonImage, 120, 120, 240, 240); // 调整绘制位置和大小
+            moonCtx.drawImage(moonImage, 120, 120, 240, 240);
             
-            // 添加淡黄色光晕
-            const gradient = moonCtx.createRadialGradient(
-                240, 240, 120,  // 内圆位置和半径
-                240, 240, 240   // 外圆位置和半径
-            );
-            gradient.addColorStop(0, "rgba(255,245,200,0.08)");
-            gradient.addColorStop(0.5, "rgba(255,245,200,0.04)");
-            gradient.addColorStop(1, "rgba(255,245,200,0)");
-            
-            moonCtx.fillStyle = gradient;
-            moonCtx.beginPath();
-            moonCtx.arc(240, 240, 240, 0, Math.PI * 2);
-            moonCtx.fill();
-            
-            updateMoonPosition();
-        };
-        
-        // 设置图片源，如果图片加载失败则使用备用方案
-        moonImage.onerror = function() {
-            // 创建备用月亮
-            const tempCanvas = document.createElement('canvas');
-            const tempCtx = tempCanvas.getContext('2d');
-            tempCanvas.width = 240;
-            tempCanvas.height = 240;
-            
-            tempCtx.fillStyle = '#f5f3ce';
-            tempCtx.beginPath();
-            tempCtx.arc(120, 120, 100, 0, Math.PI * 2);
-            tempCtx.fill();
-            
-            // 重新绘制到月亮画布
-            moonCtx.clearRect(0, 0, 480, 480);
-            moonCtx.drawImage(tempCanvas, 120, 120, 240, 240);
-            
-            // 添加光晕
             const gradient = moonCtx.createRadialGradient(240, 240, 120, 240, 240, 240);
             gradient.addColorStop(0, "rgba(255,245,200,0.08)");
             gradient.addColorStop(0.5, "rgba(255,245,200,0.04)");
@@ -325,10 +346,35 @@
             updateMoonPosition();
         };
         
-        // 加载图片
+        moonImage.onerror = function() {
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = 240;
+            tempCanvas.height = 240;
+            
+            tempCtx.fillStyle = '#f5f3ce';
+            tempCtx.beginPath();
+            tempCtx.arc(120, 120, 100, 0, Math.PI * 2);
+            tempCtx.fill();
+            
+            moonCtx.clearRect(0, 0, 480, 480);
+            moonCtx.drawImage(tempCanvas, 120, 120, 240, 240);
+            
+            const gradient = moonCtx.createRadialGradient(240, 240, 120, 240, 240, 240);
+            gradient.addColorStop(0, "rgba(255,245,200,0.08)");
+            gradient.addColorStop(0.5, "rgba(255,245,200,0.04)");
+            gradient.addColorStop(1, "rgba(255,245,200,0)");
+            
+            moonCtx.fillStyle = gradient;
+            moonCtx.beginPath();
+            moonCtx.arc(240, 240, 240, 0, Math.PI * 2);
+            moonCtx.fill();
+            
+            updateMoonPosition();
+        };
+        
         moonImage.src = "img/moon.png";
         
-        // ================== 更新月亮位置 ==================
         function updateMoonPosition() {
             const moonContainer = document.getElementById('moon-container');
             if (!moonContainer) return;
@@ -337,26 +383,21 @@
             const hours = now.getHours();
             const minutes = now.getMinutes();
             
-            // 根据时间计算月亮位置
             const totalMinutes = hours * 60 + minutes;
             const hourPercent = totalMinutes / (24 * 60);
             
-            // 水平位置：从右侧移动到右侧偏中
-            const x = window.innerWidth - 260; // 调整位置适应更大的月亮
-            
-            // 垂直位置：正弦波轨迹，调整参数使其更靠下
+            const x = window.innerWidth - 260;
             const y = 100 + Math.sin(hourPercent * Math.PI * 2) * 150;
             
             moonContainer.style.left = `${x}px`;
             moonContainer.style.top = `${y}px`;
         }
         
-        // ================== 星星 ==================
         class Star {
             constructor() {
                 this.x = Math.random() * window.innerWidth;
                 this.y = Math.random() * window.innerHeight;
-                this.r = Math.random() * 1.2; // 小星星
+                this.r = Math.random() * 1.2;
             }
             draw() {
                 ctx.beginPath();
@@ -366,10 +407,8 @@
             }
         }
         
-        // 创建星星
         for (let i = 0; i < 120; i++) stars.push(new Star());
         
-        // ================== 烟花类 ==================
         class Boom {
             constructor(tx, ty, shape = null) {
                 this.x = rand(window.innerWidth * 0.3, window.innerWidth * 0.7);
@@ -380,8 +419,8 @@
                 this.frags = [];
                 this.shape = shape;
                 this.color = this.getRandomColor();
-                this.trail = []; // 轨迹点数组
-                this.trailLength = 8; // 轨迹长度
+                this.trail = [];
+                this.trailLength = 8;
             }
             
             getRandomColor() {
@@ -395,13 +434,11 @@
                 this.x += dx * 0.05;
                 this.y += dy * 0.05;
                 
-                // 添加当前点到轨迹
                 this.trail.push({x: this.x, y: this.y});
                 if (this.trail.length > this.trailLength) {
                     this.trail.shift();
                 }
                 
-                // 绘制轨迹 - 优化为渐变效果
                 if (this.trail.length > 1) {
                     for (let i = 0; i < this.trail.length - 1; i++) {
                         const point1 = this.trail[i];
@@ -418,13 +455,11 @@
                     }
                 }
                 
-                // 绘制烟花头
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
                 ctx.fillStyle = "#fff";
                 ctx.fill();
                 
-                // 到达目标位置后爆炸
                 if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
                     this.explode();
                     this.dead = true;
@@ -451,7 +486,6 @@
                     );
                 }
                 
-                // 30%几率二次爆炸
                 if (Math.random() > 0.7) {
                     setTimeout(() => {
                         bigbooms.push(
@@ -465,7 +499,6 @@
             }
             
             createTextBoom() {
-                // 如果已经有文字烟花，创建普通烟花代替
                 if (activeTextFireworks >= MAX_TEXT_FIREWORKS) {
                     this.createNormalBoom();
                     return;
@@ -475,8 +508,7 @@
                 const text = this.shape.textContent;
                 const particles = this.getCachedTextParticles(text, this.color);
                 
-                // 限制粒子数量，避免卡顿
-                const maxParticles = Math.min(particles.length, 150);
+                const maxParticles = Math.min(particles.length, 200);
                 for (let i = 0; i < maxParticles; i++) {
                     const p = particles[i];
                     this.frags.push(new Frag(
@@ -487,7 +519,6 @@
                     ));
                 }
                 
-                // 设置定时器，在烟花结束后减少计数
                 setTimeout(() => {
                     activeTextFireworks--;
                 }, 3000);
@@ -515,14 +546,12 @@
                     return textCache.get(cacheKey);
                 }
                 
-                // 创建离屏Canvas进行预渲染
                 const offCanvas = document.createElement("canvas");
-                offCanvas.width = 300; // 使用更小的离屏画布减少计算量
-                offCanvas.height = 150;
+                offCanvas.width = 600;
+                offCanvas.height = 300;
                 const offCtx = offCanvas.getContext("2d");
                 
-                // 使用合适的字体大小
-                offCtx.font = "bold 80px 'Microsoft YaHei'";
+                offCtx.font = "bold 120px 'Microsoft YaHei', 'SimHei', sans-serif";
                 offCtx.textAlign = "center";
                 offCtx.textBaseline = "middle";
                 offCtx.fillStyle = "#fff";
@@ -531,9 +560,8 @@
                 const imgData = offCtx.getImageData(0, 0, offCanvas.width, offCanvas.height);
                 const particles = [];
                 
-                // 增加采样间隔，从6px增加到10px，减少粒子数量
-                for (let x = 0; x < imgData.width; x += 10) {
-                    for (let y = 0; y < imgData.height; y += 10) {
+                for (let x = 0; x < imgData.width; x += 12) {
+                    for (let y = 0; y < imgData.height; y += 12) {
                         const i = (y * imgData.width + x) * 4;
                         if (imgData.data[i + 3] > 150) {
                             particles.push({
@@ -544,13 +572,11 @@
                     }
                 }
                 
-                // 缓存结果
                 textCache.set(cacheKey, particles);
                 return particles;
             }
         }
         
-        // ================== 碎片类 ==================
         class Frag {
             constructor(x, y, tx, ty, color) {
                 this.x = x;
@@ -560,7 +586,7 @@
                 this.vy = 0;
                 this.dead = false;
                 this.color = color;
-                this.trail = []; // 碎片轨迹
+                this.trail = [];
                 this.trailLength = 5;
             }
             
@@ -571,13 +597,11 @@
                 this.x += (this.tx - this.x) * 0.08;
                 this.y += (this.ty - this.y) * 0.08;
                 
-                // 添加轨迹点
                 this.trail.push({x: this.x, y: this.y});
                 if (this.trail.length > this.trailLength) {
                     this.trail.shift();
                 }
                 
-                // 绘制轨迹
                 if (this.trail.length > 1) {
                     for (let i = 0; i < this.trail.length - 1; i++) {
                         const point1 = this.trail[i];
@@ -594,7 +618,6 @@
                     }
                 }
                 
-                // 绘制碎片
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, 1.5, 0, Math.PI * 2);
                 ctx.fillStyle = this.color;
@@ -604,24 +627,19 @@
             }
         }
         
-        // ================== 动画循环 ==================
         function animate(t) {
-            // 清空画布
             ctx.fillStyle = "rgba(0,5,24,0.2)";
             ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
             
-            // 绘制星星
             stars.forEach(s => s.draw());
             
-            // 绘制月亮
             const moonContainer = document.getElementById('moon-container');
             if (moonCanvas && moonContainer) {
                 const x = parseInt(moonContainer.style.left) || window.innerWidth - 260;
                 const y = parseInt(moonContainer.style.top) || 100;
-                ctx.drawImage(moonCanvas, x, y, 240, 240); // 使用新尺寸
+                ctx.drawImage(moonCanvas, x, y, 240, 240);
             }
             
-            // 定时发射烟花
             if (t - lastFireworkTime > 800) {
                 if (Math.random() > 0.3) {
                     bigbooms.push(
@@ -642,13 +660,11 @@
                 lastFireworkTime = t;
             }
             
-            // 更新和绘制烟花
             for (let i = bigbooms.length - 1; i >= 0; i--) {
                 const b = bigbooms[i];
                 if (!b.dead) {
                     b.move();
                 } else {
-                    // 批量更新碎片，提高性能
                     for (let j = b.frags.length - 1; j >= 0; j--) {
                         const f = b.frags[j];
                         f.move();
@@ -666,7 +682,6 @@
             raf(animate);
         }
         
-        // ================== 主题功能 ==================
         function startThemeRotation() {
             if (themeTimer) clearInterval(themeTimer);
             themeTimer = setInterval(() => {
@@ -684,68 +699,16 @@
             applyTheme(themes[themeIndex]);
         }
         
-        // ================== 事件监听 ==================
         function setupEventListeners() {
-            // 点击事件
-            canvas.addEventListener("click", function(e) {
-                const currentTime = Date.now();
-                
-                // 检查连续点击
-                if (currentTime - lastClickTime < 500) {
-                    clickCount++;
-                } else {
-                    clickCount = 1;
-                }
-                lastClickTime = currentTime;
-                
-                // 连续三次点击触发个性化
-                if (clickCount >= 3 && !personalizationUnlocked) {
-                    document.getElementById('personalization-modal').style.display = 'block';
-                    clickCount = 0;
-                }
-                
-                // 发射烟花
-                bigbooms.push(new Boom(e.clientX, e.clientY));
-            });
+            // PC端：保留三击触发个性化模态框
+            canvas.addEventListener("click", handleCanvasClick);
             
-            // 触摸事件
-            canvas.addEventListener("touchstart", function(e) {
-                e.preventDefault();
-                const currentTime = Date.now();
-                
-                if (currentTime - lastTouchTime < 1000) {
-                    touchCount++;
-                } else {
-                    touchCount = 1;
-                }
-                lastTouchTime = currentTime;
-                
-                // 连续10次触摸解锁霓虹主题
-                if (touchCount >= 10) {
-                    switchTheme(2);
-                    showToast('连续触摸10次，解锁霓虹主题！');
-                    touchCount = 0;
-                }
-                
-                if (e.touches.length > 0) {
-                    bigbooms.push(new Boom(e.touches[0].clientX, e.touches[0].clientY));
-                }
-            }, { passive: false });
+            // 移动端：向上滑动触发个性化模态框
+            canvas.addEventListener("touchstart", handleTouchStart, { passive: true });
+            canvas.addEventListener("touchend", handleTouchEnd, { passive: true });
             
             // 键盘事件
-            document.addEventListener("keydown", function(e) {
-                keyInput += e.key;
-                
-                if (keyInput.includes('2026')) {
-                    switchTheme(4);
-                    showToast('输入2026，解锁鸿运主题！');
-                    keyInput = '';
-                }
-                
-                if (keyInput.length > 10) {
-                    keyInput = keyInput.slice(-10);
-                }
-            });
+            document.addEventListener("keydown", handleKeyDown);
             
             // 月亮点击事件
             document.getElementById('moon-container').addEventListener('click', showMoonBlessing);
@@ -757,9 +720,133 @@
             
             // 手势事件
             setupGestureEvents();
+            
+            // 防止双击缩放
+            let lastTouchEnd = 0;
+            document.addEventListener('touchend', function(event) {
+                const now = Date.now();
+                if (now - lastTouchEnd <= 300) {
+                    event.preventDefault();
+                }
+                lastTouchEnd = now;
+            }, false);
+            
+            // 10秒后隐藏滑动提示
+            setTimeout(() => {
+                const swipeHint = document.getElementById('swipe-hint');
+                if (swipeHint) {
+                    swipeHint.style.display = 'none';
+                }
+            }, SWIPE_HINT_TIMEOUT);
         }
         
-        // ================== 祝福语功能 ==================
+        function handleCanvasClick(e) {
+            const currentTime = Date.now();
+            
+            // 检查连续点击 - 仅PC端保留
+            const clickInterval = 1000;
+            if (currentTime - lastClickTime < clickInterval) {
+                clickCount++;
+            } else {
+                clickCount = 1;
+            }
+            lastClickTime = currentTime;
+            
+            // 连续三次点击触发个性化 - 仅PC端
+            if (clickCount >= 3 && !personalizationUnlocked) {
+                showPersonalizationModal();
+                clickCount = 0;
+            }
+            
+            // 发射烟花
+            bigbooms.push(new Boom(e.clientX, e.clientY));
+        }
+        
+        function handleTouchStart(e) {
+            e.preventDefault();
+            
+            if (e.touches.length === 1) {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+            }
+            
+            const currentTime = Date.now();
+            if (currentTime - lastTouchTime < 1000) {
+                touchCount++;
+            } else {
+                touchCount = 1;
+            }
+            lastTouchTime = currentTime;
+            
+            // 连续10次触摸解锁霓虹主题
+            if (touchCount >= 10) {
+                switchTheme(2);
+                showToast('连续触摸10次，解锁霓虹主题！');
+                touchCount = 0;
+            }
+        }
+        
+        function handleTouchEnd(e) {
+            e.preventDefault();
+            
+            if (e.changedTouches.length === 1) {
+                touchEndX = e.changedTouches[0].clientX;
+                touchEndY = e.changedTouches[0].clientY;
+                
+                // 检测向上滑动
+                checkSwipeGesture();
+                
+                // 发射烟花
+                bigbooms.push(new Boom(touchEndX, touchEndY));
+            }
+        }
+        
+        function checkSwipeGesture() {
+            const deltaY = touchStartY - touchEndY; // 向上滑动为正
+            const deltaX = Math.abs(touchStartX - touchEndX);
+            
+            // 检测向上滑动：垂直移动足够大，水平移动较小
+            if (deltaY > SWIPE_THRESHOLD && deltaX < SWIPE_THRESHOLD * 0.5) {
+                if (!personalizationUnlocked) {
+                    showPersonalizationModal();
+                    showToast('⬆️ 向上滑动触发个性化设置');
+                    
+                    // 隐藏滑动提示
+                    const swipeHint = document.getElementById('swipe-hint');
+                    if (swipeHint) {
+                        swipeHint.style.display = 'none';
+                    }
+                }
+            }
+        }
+        
+        function isTouchDevice() {
+            return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        }
+        
+        function handleKeyDown(e) {
+            keyInput += e.key;
+            
+            if (keyInput.includes('2026')) {
+                switchTheme(4);
+                showToast('输入2026，解锁鸿运主题！');
+                keyInput = '';
+            }
+            
+            if (keyInput.length > 10) {
+                keyInput = keyInput.slice(-10);
+            }
+        }
+        
+        function showPersonalizationModal() {
+            const modal = document.getElementById('personalization-modal');
+            modal.style.display = 'block';
+            // 自动聚焦输入框
+            setTimeout(() => {
+                document.getElementById('name-input').focus();
+            }, 100);
+        }
+        
         function parseURLParams() {
             const urlParams = new URLSearchParams(window.location.search);
             const blessParam = urlParams.get('bless');
@@ -785,7 +872,6 @@
             showToast('🌙 祝你：' + randomBlessing);
         }
         
-        // ================== 个性化功能 ==================
         function saveUserName() {
             const nameInput = document.getElementById('name-input');
             userName = nameInput.value.trim();
@@ -796,7 +882,6 @@
                 document.getElementById('special-effects').style.display = 'block';
                 showToast(`🎉 欢迎 ${userName}，个性化功能已解锁！`);
                 
-                // 创建专属文字烟花
                 createPersonalizedFirework();
             } else {
                 showToast('请输入您的名字');
@@ -807,14 +892,12 @@
             const centerX = window.innerWidth / 2;
             const centerY = window.innerHeight / 3;
             
-            // 创建名字烟花
             setTimeout(() => {
                 const nameBoom = new Boom(centerX, centerY);
                 nameBoom.explode = function() {
                     const particles = this.getCachedTextParticles(userName, '#ffd700');
                     
-                    // 限制粒子数量
-                    const maxParticles = Math.min(particles.length, 150);
+                    const maxParticles = Math.min(particles.length, 200);
                     for (let i = 0; i < maxParticles; i++) {
                         const p = particles[i];
                         this.frags.push(new Frag(
@@ -832,25 +915,22 @@
         function toggleReverseGravity() {
             reverseGravityEnabled = !reverseGravityEnabled;
             
-            // 修改碎片重力
             Frag.prototype.move = function() {
                 if (reverseGravityEnabled) {
-                    this.vy -= 0.18; // 反重力
+                    this.vy -= 0.18;
                 } else {
-                    this.vy += 0.18; // 正常重力
+                    this.vy += 0.18;
                 }
                 this.ty += this.vy;
                 
                 this.x += (this.tx - this.x) * 0.08;
                 this.y += (this.ty - this.y) * 0.08;
                 
-                // 添加轨迹点
                 this.trail.push({x: this.x, y: this.y});
                 if (this.trail.length > this.trailLength) {
                     this.trail.shift();
                 }
                 
-                // 绘制轨迹
                 if (this.trail.length > 1) {
                     for (let i = 0; i < this.trail.length - 1; i++) {
                         const point1 = this.trail[i];
@@ -886,7 +966,6 @@
             const luckyNumber = Math.floor(Math.random() * 100) + 1;
             showToast(`🎰 ${userName}的幸运数字是：${luckyNumber}`);
             
-            // 用幸运数字创建烟花
             const numberBoom = new Boom(window.innerWidth / 2, window.innerHeight / 2);
             numberBoom.explode = function() {
                 for (let i = 0; i < luckyNumber; i++) {
@@ -904,9 +983,7 @@
             bigbooms.push(numberBoom);
         }
         
-        // ================== 手势事件 ==================
         function setupGestureEvents() {
-            // 双指点击切换主题
             canvas.addEventListener('touchend', (e) => {
                 if (e.touches.length === 0) {
                     const now = Date.now();
@@ -916,7 +993,6 @@
                 }
             });
             
-            // 三指点击显示随机祝福
             canvas.addEventListener('touchstart', (e) => {
                 if (e.touches.length === 3) {
                     const randomBlessing = blessings[Math.floor(Math.random() * blessings.length)];
@@ -926,16 +1002,14 @@
             });
         }
         
-        // ================== 时间检查 ==================
         function checkMidnight() {
             const now = new Date();
             if (now.getHours() === 0 && now.getMinutes() < 1) {
-                switchTheme(1); // 金色主题
+                switchTheme(1);
                 showToast('🎆 凌晨0点，自动启用金色主题！');
             }
         }
         
-        // ================== 工具函数 ==================
         function showToast(message) {
             const toast = document.getElementById('toast');
             toast.textContent = message;
@@ -946,7 +1020,6 @@
             }, 3000);
         }
         
-        // ================== 初始化 ==================
         function init() {
             setupEventListeners();
             parseURLParams();
@@ -955,7 +1028,6 @@
             raf(animate);
         }
         
-        // 启动应用
         window.addEventListener('load', init);
     </script>
 </body>
